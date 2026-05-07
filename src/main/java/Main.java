@@ -272,6 +272,62 @@ public class Main {
                         el -> el.gender() != null ? el.gender() : "Inconnu",
                         Collectors.mapping(Employee::name, joining(", "))));
 
+        // -- groupingBy avec multi-niveaux : grouper par genre, puis par tranche d'âge (Junior/Mid/Senior) --
+        Map<String, Map<String, List<Employee>>> byGenderAndAgeRange = Stream.of(
+                        new Employee("Alice", 30, 50000, "Femme"),
+                        new Employee("Bob", 25, 40000, "Homme"),
+                        new Employee("Charlie", 35, 60000, "Homme"),
+                        new Employee("Dana", 28, 45000, null)) // Genre inconnu
+                .collect(groupingBy(el -> el.gender() != null ? el.gender() : "Inconnu", groupingBy(
+                        el -> el.age > 30 ? "Senior" : el.age > 25 ? "Mid" : "Junior",
+                        toList()
+                )));
+
+        // -- groupingBy avec multi-niveaux : grouper par genre, puis par tranche d'âge (Junior/Mid/Senior), puis compter le nombre d'employés dans chaque sous-groupe avec un type de supplier --
+        Map<String, Map<String, Long>> countByGenderAndAgeRange = Stream.of(
+                        new Employee("Alice", 30, 50000, "Femme"),
+                        new Employee("Bob", 25, 40000, "Homme"),
+                        new Employee("Charlie", 35, 60000, "Homme"),
+                        new Employee("Dana", 28, 45000, null)) // Genre inconnu
+                .collect(groupingBy(
+                        el -> el.gender() != null ? el.gender() : "Inconnu",
+                        LinkedHashMap::new,
+                        groupingBy(
+                                el -> el.age() > 30 ? "Senior" : el.age() > 25 ? "Mid" : "Junior",
+                                LinkedHashMap::new,
+                                Collectors.counting()
+                        ))
+                );
+
+        // -- groupingBy avec multi-niveaux : grouper par genre, puis par tranche d'âge (Junior/Mid/Senior), puis retourner la liste des employés dans chaque sous-groupe avec un type de supplier --
+        Map<String, List<Employee>> employeesByGender = Stream.of(
+                        new Employee("Alice", 30, 50000, "Femme"),
+                        new Employee("Bob", 25, 40000, "Homme"),
+                        new Employee("Charlie", 35, 60000, "Homme"),
+                        new Employee("Dana", 28, 45000, null)) // Genre inconnu
+                .collect(groupingBy(
+                                el -> el.gender() != null ? el.gender() : "Inconnu",
+                                LinkedHashMap::new,
+                                toList()
+                        )
+                );
+
+        // -- partitioningBy : sépare les éléments en deux groupes selon un prédicat (true/false) --
+        //-- partitioningBy : sépare les éléments en deux groupes selon un prédicat (true/false) --  Output : {true: [...], false: [...]}
+        Map<Boolean, List<Employee>> partitionedBySalary = Stream.of(
+                        new Employee("Alice", 30, 50000, "Femme"),
+                        new Employee("Bob", 25, 40000, "Homme"),
+                        new Employee("Charlie", 35, 60000, "Homme"))
+                .collect(partitioningBy(e -> e.salary() > 45000));
+
+        // -- partitioningBy avec un downstream collector : séparer les éléments en deux groupes selon un prédicat, puis compter le nombre d'employés dans chaque groupe --
+        Map<Boolean, Long> countPartitionedBySalary = Stream.of(
+                        new Employee("Alice", 30, 50000, "Femme"),
+                        new Employee("Bob", 25, 40000, "Homme"),
+                        new Employee("Charlie", 35, 60000, "Homme"))
+                .collect(partitioningBy(e -> e.salary() > 45000, Collectors.counting()));
+
+
     }
 
     record Employee(String name, int age, double salary, String gender) {
